@@ -1,33 +1,45 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
 import './App.css'
+import { useState } from 'react'
+import { useEffect } from 'react'
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [products, setProducts] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState("")
+
+  useEffect(() => {
+    setLoading(true)
+    setError("")
+
+    async function loadProducts() {
+      try {
+        const res = await fetch("http://127.0.0.1:8000/api/products")
+        if (res.ok) {
+          const data = await res.json()
+          setProducts(data)
+        } else {
+          setError("Error HTTP: " + res.status)
+        }
+      } catch (err) {
+        setError(error.message)
+      } finally {
+        setLoading(false)
+      }
+    }
+    loadProducts()
+  }, [])
 
   return (
     <>
       <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+        <h1>Productos</h1>
+        {loading && <h2>Cargando</h2>}
+        {error && <h2>{error}</h2>}
+        {!loading && !error &&
+          <ul>
+            {products.map(p => (<li key={p.id}>{p.nombre}, {p.precio + " €"}, {p.stock}</li>))}
+          </ul>}
       </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
     </>
   )
 }
