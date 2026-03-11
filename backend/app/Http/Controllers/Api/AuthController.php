@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Laravel\Socialite\Facades\Socialite;
+use Tymon\JWTAuth\Facades\JWTAuth;
 
 class AuthController extends Controller
 {
@@ -21,21 +22,25 @@ class AuthController extends Controller
         /** @var \Laravel\Socialite\Two\GoogleProvider $driver */
         $driver = Socialite::driver('google');
         $user = $driver->stateless()->user();
-
         $email = $user->getEmail();
         $nuevoNombre = $user->getName();
 
-        User::updateOrCreate(
+        $userDb = User::updateOrCreate(
             ['email' => $email],
-            ['name' => $nuevoNombre, 'google_id' => $user->getId(), 'avatar' => $user->getAvatar()]
+            ['name' => $nuevoNombre, 'google_id' => $user->getId(), 'avatar' => $user->getAvatar()],
         );
+
+        $token = JWTAuth::fromUser($userDb);
 
         return response()->json(
             [
-                'email' => $user->getEmail(),
-                'name' => $user->getName(),
-                'google_id' => $user->getId() ?? $user->getEmail(),
-                'avatar' => $user->getAvatar(),
+                'token' => $token,
+                'user' => [
+                    'email' => $user->getEmail(),
+                    'name' => $user->getName(),
+                    'google_id' => $user->getId() ?? $user->getEmail(),
+                    'avatar' => $user->getAvatar(),
+                ]
             ]
         );
     }
