@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Tymon\JWTAuth\Contracts\JWTSubject;
+use App\Models\CartItem;
 
 class User extends Authenticatable implements JWTSubject
 {
@@ -23,6 +24,16 @@ class User extends Authenticatable implements JWTSubject
         return [];
     }
 
+    public function cartItems()
+    {
+        return $this->hasMany(CartItem::class);
+    }
+
+    public function orders()
+    {
+        return $this->hasMany(Order::class);
+    }
+    
     /**
      * The attributes that are mass assignable.
      *
