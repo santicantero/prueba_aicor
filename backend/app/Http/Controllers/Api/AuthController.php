@@ -32,16 +32,13 @@ class AuthController extends Controller
 
         $token = JWTAuth::fromUser($userDb);
 
-        return response()->json(
-            [
-                'token' => $token,
-                'user' => [
-                    'email' => $user->getEmail(),
-                    'name' => $user->getName(),
-                    'google_id' => $user->getId() ?? $user->getEmail(),
-                    'avatar' => $user->getAvatar(),
-                ]
-            ]
-        );
+        $frontendUrl = 'http://localhost:5173/auth/callback?' . http_build_query([
+            'token' => $token,
+            'name' => $userDb->name,
+            'email' => $userDb->email,
+            'avatar' => $userDb->avatar,            
+        ]);
+
+        return redirect($frontendUrl);
     }
 }
