@@ -48,6 +48,16 @@ jobs:
       - name: Copiar .env
         run: cp .env.example .env
 
+      - name: Crear carpetas necesarias
+        run: |
+          mkdir -p bootstrap/cache
+          mkdir -p storage/framework/cache
+          mkdir -p storage/framework/sessions
+          mkdir -p storage/framework/views
+
+      - name: Dar permisos
+        run: chmod -R 777 storage bootstrap/cache
+
       - name: Instalar dependencias Composer
         run: composer install --no-interaction --prefer-dist --optimize-autoloader
 
@@ -65,9 +75,6 @@ jobs:
           echo "DB_DATABASE=aicor_test" >> .env
           echo "DB_USERNAME=root" >> .env
           echo "DB_PASSWORD=root" >> .env
-
-      - name: Dar permisos
-        run: chmod -R 777 storage bootstrap/cache
 
       - name: Esperar a MySQL
         run: |
