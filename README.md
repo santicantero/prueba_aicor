@@ -194,6 +194,12 @@ prueba_aicor/
 ├── backend/
 └── frontend/
 
+## Documentación API
+
+La documentación básica de la API se encuentra en:
+
+`docs/api/endpoints.md`
+
 ## Autor
 
 - Santi :P
