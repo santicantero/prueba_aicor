@@ -1,0 +1,90 @@
+name: Laravel Tests
+
+on:
+  push:
+    branches:
+      - main
+      - feature/**
+      - bugfix/**
+      - docs/**
+      - ci/**
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  laravel-tests:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: backend
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_DATABASE: aicor_test
+          MYSQL_ROOT_PASSWORD: root
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+      - name: Clonar repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, pdo, pdo_mysql
+          coverage: none
+
+      - name: Copiar .env
+        run: cp .env.example .env
+
+      - name: Crear carpetas necesarias
+        run: |
+          mkdir -p bootstrap/cache
+          mkdir -p storage/framework/cache
+          mkdir -p storage/framework/sessions
+          mkdir -p storage/framework/views
+
+      - name: Dar permisos
+        run: chmod -R 777 storage bootstrap/cache
+
+      - name: Instalar dependencias Composer
+        run: composer install --no-interaction --prefer-dist --optimize-autoloader
+
+      - name: Generar APP_KEY
+        run: php artisan key:generate
+
+      - name: Generar JWT secret
+        run: php artisan jwt:secret
+
+      - name: Configurar base de datos
+        run: |
+          echo "DB_CONNECTION=mysql" >> .env
+          echo "DB_HOST=127.0.0.1" >> .env
+          echo "DB_PORT=3306" >> .env
+          echo "DB_DATABASE=aicor_test" >> .env
+          echo "DB_USERNAME=root" >> .env
+          echo "DB_PASSWORD=root" >> .env
+
+      - name: Esperar a MySQL
+        run: |
+          until mysqladmin ping -h127.0.0.1 -uroot -proot --silent; do
+            echo "Esperando a MySQL..."
+            sleep 2
+          done
+
+      - name: Ejecutar migraciones
+        run: php artisan migrate --force
+
+      - name: Ejecutar tests
+        run: php artisan test
