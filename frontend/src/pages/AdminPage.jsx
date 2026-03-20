@@ -14,6 +14,7 @@ export default function AdminPage() {
     const [orders, setOrders] = useState([])
     const [customers, setCustomers] = useState([])
     const [coupons, setCoupons] = useState([])
+    const [reviews, setReviews] = useState([])
     
     // Estados para el formulario de producto
     const [showAddProduct, setShowAddProduct] = useState(false)
@@ -26,6 +27,10 @@ export default function AdminPage() {
     // Estados para cupones
     const [showAddCoupon, setShowAddCoupon] = useState(false)
     const [newCoupon, setNewCoupon] = useState({ code: '', discount_percentage: '' })
+
+    // Estados para reseñas
+    const [respondingTo, setRespondingTo] = useState(null)
+    const [adminResponse, setAdminResponse] = useState('')
 
     useEffect(() => {
         if (!loading && (!user || !user.is_admin)) {
@@ -59,6 +64,11 @@ export default function AdminPage() {
                     headers: { 'Authorization': `Bearer ${token}` }
                 })
                 if (res.ok) setCoupons(await res.json())
+            } else if (activeTab === 'reviews') {
+                const res = await fetch('http://127.0.0.1:8000/api/admin/reviews', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                })
+                if (res.ok) setReviews(await res.json())
             }
         } catch (error) {
             console.error('Error fetching admin data:', error)
@@ -183,6 +193,42 @@ export default function AdminPage() {
         }
     }
 
+    async function handleDeleteReview(id) {
+        if (!confirm('¿Seguro que quieres borrar esta valoración?')) return;
+        try {
+            const res = await fetch(`http://127.0.0.1:8000/api/admin/reviews/${id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            })
+            if (res.ok) fetchData()
+        } catch (error) {
+            console.error('Error:', error)
+        }
+    }
+
+    async function handleRespondReview(e) {
+        e.preventDefault()
+        if (!respondingTo) return;
+        
+        try {
+            const res = await fetch(`http://127.0.0.1:8000/api/admin/reviews/${respondingTo}/respond`, {
+                method: 'PUT',
+                headers: { 
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ admin_response: adminResponse })
+            })
+            if (res.ok) {
+                setRespondingTo(null)
+                setAdminResponse('')
+                fetchData()
+            }
+        } catch (error) {
+            console.error('Error:', error)
+        }
+    }
+
     if (loading) return <div>Cargando...</div>
     if (!user || (!user.is_admin && !loading)) {
         return <Navigate to="/" replace />
@@ -225,6 +271,12 @@ export default function AdminPage() {
                         className={`px-6 py-3 font-bold border-b-2 text-lg transition-colors flex items-center gap-2 ${activeTab === 'coupons' ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
                     >
                         <span className="material-symbols-outlined">percent</span> Cupones
+                    </button>
+                    <button 
+                        onClick={() => setActiveTab('reviews')}
+                        className={`px-6 py-3 font-bold border-b-2 text-lg transition-colors flex items-center gap-2 ${activeTab === 'reviews' ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+                    >
+                        <span className="material-symbols-outlined">hotel_class</span> Valoraciones
                     </button>
                 </div>
 
@@ -488,6 +540,104 @@ export default function AdminPage() {
                                         )}
                                     </tbody>
                                 </table>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* --- TAB RESEÑAS --- */}
+                    {activeTab === 'reviews' && (
+                        <div>
+                            <h2 className="text-2xl font-bold mb-6">Moderación de Valoraciones</h2>
+                            
+                            <div className="space-y-4">
+                                {reviews.map(r => (
+                                    <div key={r.id} className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-6 rounded-2xl flex flex-col md:flex-row gap-6">
+                                        <div className="md:w-1/4 flex flex-col gap-2">
+                                            <div className="font-bold text-lg">{r.product?.nombre}</div>
+                                            <div className="text-sm text-slate-500">Por: {r.user?.name}</div>
+                                            <div className="flex gap-0.5 text-amber-500">
+                                                {Array.from({ length: 5 }).map((_, i) => (
+                                                    <span key={i} className="material-symbols-outlined text-lg" style={{ fontVariationSettings: i < r.rating ? "'FILL' 1" : "'FILL' 0" }}>star</span>
+                                                ))}
+                                            </div>
+                                            <div className="text-xs text-slate-400">{new Date(r.created_at).toLocaleDateString()}</div>
+                                        </div>
+                                        
+                                        <div className="flex-1 flex flex-col">
+                                            <p className="text-slate-700 dark:text-slate-300 leading-relaxed italic border-l-4 border-slate-200 dark:border-slate-600 pl-4 mb-4">"{r.comment}"</p>
+                                            
+                                            {r.admin_response ? (
+                                                <div className="bg-primary/5 dark:bg-primary/10 border-l-4 border-primary p-4 rounded-r-xl relative group">
+                                                    <p className="text-sm font-bold text-primary mb-1">Tu respuesta:</p>
+                                                    <p className="text-sm text-slate-700 dark:text-slate-300">{r.admin_response}</p>
+                                                    
+                                                    <button 
+                                                        onClick={() => {
+                                                            setRespondingTo(r.id);
+                                                            setAdminResponse(r.admin_response);
+                                                        }}
+                                                        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-white dark:bg-slate-700 p-1.5 rounded-lg shadow-sm text-primary"
+                                                    >
+                                                        <span className="material-symbols-outlined text-[18px]">edit</span>
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                respondingTo === r.id ? (
+                                                    <form onSubmit={handleRespondReview} className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-4 rounded-xl mt-auto">
+                                                        <label className="block text-sm font-bold mb-2 text-primary">Escribir respuesta pública</label>
+                                                        <textarea 
+                                                            required
+                                                            rows="2"
+                                                            value={adminResponse}
+                                                            onChange={e => setAdminResponse(e.target.value)}
+                                                            className="w-full border p-3 rounded-lg bg-white dark:bg-slate-800 outline-none focus:border-primary border-slate-300 dark:border-slate-600 mb-3 resize-none"
+                                                        />
+                                                        <div className="flex justify-end gap-2">
+                                                            <button 
+                                                                type="button" 
+                                                                onClick={() => { setRespondingTo(null); setAdminResponse(''); }}
+                                                                className="px-4 py-2 font-bold text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                                                            >
+                                                                Cancelar
+                                                            </button>
+                                                            <button 
+                                                                type="submit"
+                                                                className="px-4 py-2 bg-primary text-white font-bold rounded-lg hover:bg-primary-dark transition-colors"
+                                                            >
+                                                                Publicar
+                                                            </button>
+                                                        </div>
+                                                    </form>
+                                                ) : (
+                                                    <button 
+                                                        onClick={() => setRespondingTo(r.id)}
+                                                        className="mt-auto self-start text-sm font-bold text-primary hover:bg-primary/10 px-4 py-2 rounded-lg transition-colors flex items-center gap-1"
+                                                    >
+                                                        <span className="material-symbols-outlined text-[18px]">reply</span>
+                                                        Responder Privadamente o al Público
+                                                    </button>
+                                                )
+                                            )}
+                                        </div>
+                                        
+                                        <div className="md:w-16 flex md:flex-col justify-end gap-2 shrink-0 border-t md:border-t-0 md:border-l border-slate-100 dark:border-slate-700 pt-4 md:pt-0 md:pl-4">
+                                            <button 
+                                                onClick={() => handleDeleteReview(r.id)}
+                                                className="p-3 bg-red-50 text-red-500 hover:bg-red-500 hover:text-white dark:bg-red-900/20 dark:hover:bg-red-900/80 rounded-xl transition-colors flex justify-center items-center"
+                                                title="Eliminar Reseña"
+                                            >
+                                                <span className="material-symbols-outlined">delete</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                                
+                                {reviews.length === 0 && (
+                                    <div className="text-center p-12 bg-slate-50 dark:bg-slate-800/30 rounded-2xl border border-slate-200 dark:border-slate-700">
+                                        <span className="material-symbols-outlined text-4xl text-slate-300 dark:text-slate-600 mb-3 block">speaker_notes_off</span>
+                                        <p className="text-slate-500 font-medium text-lg">No hay valoraciones de clientes en ningún producto todavía.</p>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     )}
