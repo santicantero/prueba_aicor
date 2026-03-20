@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\CartController;
 use App\Http\Controllers\Api\OrderController;
 
 Route::get('/products', [ProductController::class, 'index']);
+Route::get('/products/{id}/reviews', [\App\Http\Controllers\Api\ReviewController::class, 'index']);
 
 Route::get('/auth/google/redirect', [AuthController::class, 'redirectToGoogle']);
 Route::get('/auth/google/callback', [AuthController::class, 'handleGoogleCallback']);
@@ -27,6 +28,11 @@ Route::middleware(['auth:api', 'admin'])->prefix('admin')->group(function () {
     Route::post('/coupons', [\App\Http\Controllers\Api\CouponController::class, 'store']);
     Route::put('/coupons/{id}/toggle', [\App\Http\Controllers\Api\CouponController::class, 'toggleStatus']);
     Route::delete('/coupons/{id}', [\App\Http\Controllers\Api\CouponController::class, 'destroy']);
+
+    // Reviews
+    Route::get('/reviews', [\App\Http\Controllers\Api\ReviewController::class, 'adminIndex']);
+    Route::delete('/reviews/{id}', [\App\Http\Controllers\Api\ReviewController::class, 'destroy']);
+    Route::put('/reviews/{id}/respond', [\App\Http\Controllers\Api\ReviewController::class, 'respond']);
 });
 
 Route::middleware('auth:api')->group(function () {
@@ -37,5 +43,9 @@ Route::middleware('auth:api')->group(function () {
     
     Route::get('/orders', [OrderController::class, 'index']);
     Route::post('/orders/confirm', [OrderController::class, 'confirm']);
+    
+    // Review Permissions and Submission
+    Route::get('/products/{id}/can-review', [\App\Http\Controllers\Api\ReviewController::class, 'checkEligibility']);
+    Route::post('/products/{id}/reviews', [\App\Http\Controllers\Api\ReviewController::class, 'store']);
 });
 
