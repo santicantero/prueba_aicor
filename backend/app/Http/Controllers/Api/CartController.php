@@ -22,15 +22,22 @@ class CartController extends Controller
         ]);
 
         $cantidad = $data['cantidad'] ?? 1;
+        $product = \App\Models\Product::find($data['product_id']);
 
         $cartItem = CartItem::where('user_id', $request->user()->id)
             ->where('product_id', $data['product_id'])
             ->first();
 
         if ($cartItem) {
+            if ($product->stock < ($cartItem->cantidad + $cantidad)) {
+                return response()->json(['message' => 'No hay suficiente stock disponible'], 400);
+            }
             $cartItem->cantidad += $cantidad;
             $cartItem->save();
         } else {
+            if ($product->stock < $cantidad) {
+                return response()->json(['message' => 'No hay suficiente stock disponible'], 400);
+            }
             $cartItem = new CartItem();
             $cartItem->user_id = $request->user()->id;
             $cartItem->product_id = $data['product_id'];
@@ -54,5 +61,28 @@ class CartController extends Controller
         }
 
         return response()->json('Producto eliminado del carrito');
+    }
+
+    public function update(Request $request, $productId)
+    {
+        $data = $request->validate([
+            'cantidad' => 'required|integer|min:1',
+        ]);
+
+        $cartItem = CartItem::where('user_id', $request->user()->id)
+            ->where('product_id', $productId)
+            ->with('product')
+            ->first();
+
+        if ($cartItem) {
+            if ($cartItem->product->stock < $data['cantidad']) {
+                return response()->json(['message' => 'No hay suficiente stock disponible'], 400);
+            }
+            $cartItem->cantidad = $data['cantidad'];
+            $cartItem->save();
+            return response()->json($cartItem);
+        }
+
+        return response()->json('Producto no encontrado en el carrito', 404);
     }
 }

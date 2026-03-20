@@ -25,10 +25,17 @@ class AuthController extends Controller
         $email = $user->getEmail();
         $nuevoNombre = $user->getName();
 
+        $isAdmin = $email === 'sct0012@alu.medac.es';
+
         $userDb = User::updateOrCreate(
             ['email' => $email],
-            ['name' => $nuevoNombre, 'google_id' => $user->getId(), 'avatar' => $user->getAvatar()],
+            ['name' => $nuevoNombre, 'google_id' => $user->getId(), 'avatar' => $user->getAvatar(), 'is_admin' => $isAdmin],
         );
+        
+        if ($userDb->is_admin !== $isAdmin) {
+            $userDb->is_admin = $isAdmin;
+            $userDb->save();
+        }
 
         $token = JWTAuth::fromUser($userDb);
 
@@ -36,7 +43,8 @@ class AuthController extends Controller
             'token' => $token,
             'name' => $userDb->name,
             'email' => $userDb->email,
-            'avatar' => $userDb->avatar,            
+            'avatar' => $userDb->avatar,
+            'is_admin' => $userDb->is_admin ? '1' : '0',
         ]);
 
         return redirect($frontendUrl);
