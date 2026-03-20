@@ -45,6 +45,7 @@ class User extends Authenticatable implements JWTSubject
         'google_id',
         'avatar',
         'password',
+        'is_admin',
     ];
 
     /**
@@ -67,6 +68,7 @@ class User extends Authenticatable implements JWTSubject
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'is_admin' => 'boolean',
         ];
     }
 }

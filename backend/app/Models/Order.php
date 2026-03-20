@@ -11,7 +11,12 @@ class Order extends Model
 {
     protected $fillable = [
         'user_id',
-        'total'
+        'total',
+        'full_name',
+        'email',
+        'phone',
+        'address',
+        'zip_code'
     ];
 
     protected $casts = [
