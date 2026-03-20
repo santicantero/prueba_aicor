@@ -3,23 +3,17 @@ import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import { Link, useNavigate } from 'react-router-dom'
 import { useState } from 'react'
+import ProductImage from '../components/ProductImage'
 
 export default function CartPage() {
-    const { cartItems, loadingCart, removeFromCart, confirmOrder } = useCart()
+    const { cartItems, loadingCart, removeFromCart, updateQuantity, validateCoupon } = useCart()
     const navigate = useNavigate()
-    const [isCheckingOut, setIsCheckingOut] = useState(false)
-
-    const defaultImages = {
-        "Teclado": "https://images.unsplash.com/photo-1511467687858-23d96c32e4ae?w=800&q=80",
-        "Ratón": "https://images.unsplash.com/photo-1615663245857-ac93bb7c39e7?w=800&q=80",
-        "Alfombrilla grande": "https://images.unsplash.com/photo-1616428315106-904359e9bf9b?w=800&q=80",
-        "Cascos Gaming": "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&q=80",
-        "Monitor 27 pulgadas": "https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?w=800&q=80",
-        "Ordenador de Sobremesa": "https://images.unsplash.com/photo-1587831990711-23ca6441447b?w=800&q=80",
-        "Lampara de lava": "https://images.unsplash.com/photo-1571167530330-9e635cbc1dca?w=800&q=80",
-        "Regleta": "https://images.unsplash.com/photo-1629739683359-99436fc9fca6?w=800&q=80",
-        "Hub usb C": "https://images.unsplash.com/photo-1611532736597-de2d4265fba3?w=800&q=80"
-    };
+    
+    // Estados para cupones
+    const [couponCode, setCouponCode] = useState('')
+    const [appliedCoupon, setAppliedCoupon] = useState(null)
+    const [couponError, setCouponError] = useState('')
+    const [isValidating, setIsValidating] = useState(false)
 
     let total = 0
     for (let i = 0; i < cartItems.length; i++) {
@@ -35,16 +29,40 @@ export default function CartPage() {
         }
     }
 
-    async function handleCheckout() {
-        setIsCheckingOut(true)
-        const ok = await confirmOrder()
-
-        if (ok == true) {
-            navigate('/orders')
+    async function handleDecrease(productId, currentCantidad) {
+        if (currentCantidad > 1) {
+            await updateQuantity(productId, currentCantidad - 1)
         } else {
-            alert('Error al confirmar el pedido. Por favor inténtalo de nuevo.')
-            setIsCheckingOut(false)
+            handleRemove(productId)
         }
+    }
+
+    async function handleIncrease(productId, currentCantidad) {
+        await updateQuantity(productId, currentCantidad + 1)
+    }
+
+    function handleCheckout() {
+        navigate('/checkout', { 
+            state: { appliedCoupon: appliedCoupon } 
+        })
+    }
+
+    const handleApplyCoupon = async () => {
+        if (!couponCode.trim()) return
+        
+        setIsValidating(true)
+        setCouponError('')
+        
+        const result = await validateCoupon(couponCode)
+        
+        if (result.valid) {
+            setAppliedCoupon(result)
+            setCouponError('')
+        } else {
+            setAppliedCoupon(null)
+            setCouponError(result.message || 'Cupón no válido')
+        }
+        setIsValidating(false)
     }
 
     if (loadingCart == true) {
@@ -82,13 +100,8 @@ export default function CartPage() {
         )
     }
 
-    let checkoutButtonText = 'Proceder al pago'
-    if (isCheckingOut == true) {
-        checkoutButtonText = 'Procesando pago...'
-    }
-
     let checkoutButtonDisabled = false
-    if (isCheckingOut == true || cartItems.length == 0) {
+    if (cartItems.length == 0) {
         checkoutButtonDisabled = true
     }
 
@@ -101,41 +114,34 @@ export default function CartPage() {
                 <div className="flex flex-col lg:flex-row gap-8">
                     <div className="flex-1 flex flex-col gap-4">
                         {cartItems.map(function (item) {
-                            let imageUrl = "https://images.unsplash.com/photo-1525547719571-a2d4ac8945e2?w=800&q=80"
-
-                            if (item.product.imagen_url != null && item.product.imagen_url != "") {
-                                imageUrl = item.product.imagen_url
-                            } else {
-                                const n = item.product.nombre.toLowerCase();
-                                if (n.includes("teclado")) {
-                                    imageUrl = "https://images.unsplash.com/photo-1511467687858-23d96c32e4ae?w=800&q=80";
-                                } else if (n.includes("ratón")) {
-                                    imageUrl = "https://images.unsplash.com/photo-1615663245857-ac93bb7c39e7?w=800&q=80";
-                                } else if (n.includes("alfombrilla")) {
-                                    imageUrl = "https://images.unsplash.com/photo-1629429464245-4874997f1e73?w=800&q=80";
-                                } else if (n.includes("cascos") || n.includes("auriculares")) {
-                                    imageUrl = "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&q=80";
-                                } else if (n.includes("monitor")) {
-                                    imageUrl = "https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?w=800&q=80";
-                                } else if (n.includes("ordenador") || n.includes("sobremesa")) {
-                                    imageUrl = "https://images.unsplash.com/photo-1587831990711-23ca6441447b?w=800&q=80";
-                                } else if (n.includes("lampara") || n.includes("lámpara")) {
-                                    imageUrl = "https://images.unsplash.com/photo-1542332606-b3d2703867cd?w=800&q=80";
-                                } else if (n.includes("regleta")) {
-                                    imageUrl = "https://images.unsplash.com/photo-1585351149313-be5939fc9b2c?w=800&q=80";
-                                } else if (n.includes("hub") || n.includes("usb")) {
-                                    imageUrl = "https://images.unsplash.com/photo-1611532736597-de2d4265fba3?w=800&q=80";
-                                }
-                            }
-
                             return (
                                 <div key={item.id} className="flex p-4 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 gap-4 items-center transition-all hover:shadow-md">
-                                    <div className="w-24 h-24 rounded-xl relative overflow-hidden flex-shrink-0 bg-slate-100 dark:bg-slate-800">
-                                        <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url("${imageUrl}")` }}></div>
+                                    <div className="w-24 h-24 rounded-xl relative overflow-hidden shrink-0 bg-slate-100 dark:bg-slate-800">
+                                        <ProductImage producto={item.product} className="w-full h-full object-cover" />
                                     </div>
                                     <div className="flex-1">
                                         <h3 className="text-lg font-bold">{item.product.nombre}</h3>
-                                        <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">{item.product.precio} € x {item.cantidad}</p>
+                                        <p className="text-slate-500 dark:text-slate-400 text-sm mt-1 mb-2">{item.product.precio} €</p>
+                                        
+                                        <div className="flex items-center gap-3">
+                                            <div className="flex items-center border border-slate-200 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800">
+                                                <button 
+                                                    onClick={() => handleDecrease(item.product_id, item.cantidad)}
+                                                    className="w-8 h-8 flex items-center justify-center text-slate-500 hover:text-primary transition-colors"
+                                                >
+                                                    <span className="material-symbols-outlined text-[18px]">remove</span>
+                                                </button>
+                                                <span className="w-8 text-center font-bold text-sm">{item.cantidad}</span>
+                                                <button 
+                                                    onClick={() => handleIncrease(item.product_id, item.cantidad)}
+                                                    disabled={item.cantidad >= item.product.stock}
+                                                    className="w-8 h-8 flex items-center justify-center text-slate-500 hover:text-primary transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:text-slate-500"
+                                                    title={item.cantidad >= item.product.stock ? "No hay más stock disponible" : ""}
+                                                >
+                                                    <span className="material-symbols-outlined text-[18px]">add</span>
+                                                </button>
+                                            </div>
+                                        </div>
                                     </div>
                                     <div className="text-right flex flex-col items-end justify-between h-full">
                                         <p className="font-bold text-lg text-primary">{(item.product.precio * item.cantidad).toFixed(2)} €</p>
@@ -160,14 +166,65 @@ export default function CartPage() {
                                 <span>Subtotal</span>
                                 <span>{total.toFixed(2)} €</span>
                             </div>
-                            <div className="flex justify-between mb-4 text-slate-600 dark:text-slate-400">
+                             <div className="flex justify-between mb-4 text-slate-600 dark:text-slate-400">
                                 <span>Envío estimado</span>
                                 <span className="text-emerald-500 font-medium">Gratis</span>
                             </div>
+
+                            {appliedCoupon && (
+                                <div className="flex justify-between mb-4 text-emerald-600 dark:text-emerald-400 font-medium">
+                                    <span>Descuento ({appliedCoupon.discount_percentage}%)</span>
+                                    <span>- {(total * (appliedCoupon.discount_percentage / 100)).toFixed(2)} €</span>
+                                </div>
+                            )}
+
                             <div className="h-px bg-slate-200 dark:bg-slate-800 my-4"></div>
+                            
                             <div className="flex justify-between mb-6 text-lg font-bold">
                                 <span>Total</span>
-                                <span className="text-primary text-xl">{total.toFixed(2)} €</span>
+                                <div className="text-right">
+                                    {appliedCoupon ? (
+                                        <>
+                                            <span className="block text-sm text-slate-400 line-through font-normal">{total.toFixed(2)} €</span>
+                                            <span className="text-primary text-xl">{(total - (total * (appliedCoupon.discount_percentage / 100))).toFixed(2)} €</span>
+                                        </>
+                                    ) : (
+                                        <span className="text-primary text-xl">{total.toFixed(2)} €</span>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Coupon Input */}
+                            <div className="mb-6 pt-4 border-t border-slate-100 dark:border-slate-800">
+                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-2">Cupón de descuento</label>
+                                <div className="flex gap-2">
+                                    <input 
+                                        type="text" 
+                                        value={couponCode}
+                                        onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                                        disabled={!!appliedCoupon || isValidating}
+                                        className="flex-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 outline-none focus:border-primary uppercase text-sm font-bold"
+                                        placeholder="CÓDIGO"
+                                    />
+                                    {!appliedCoupon ? (
+                                        <button 
+                                            onClick={handleApplyCoupon}
+                                            disabled={isValidating || !couponCode}
+                                            className="px-3 py-2 bg-slate-800 dark:bg-slate-700 text-white font-bold rounded-lg hover:bg-slate-700 dark:hover:bg-slate-600 transition-colors text-sm disabled:opacity-50"
+                                        >
+                                            {isValidating ? '...' : 'Aplicar'}
+                                        </button>
+                                    ) : (
+                                        <button 
+                                            onClick={() => {setAppliedCoupon(null); setCouponCode('')}}
+                                            className="px-3 py-2 bg-red-100 text-red-600 font-bold rounded-lg hover:bg-red-200 transition-colors text-sm"
+                                        >
+                                            Quitar
+                                        </button>
+                                    )}
+                                </div>
+                                {couponError && <p className="text-red-500 text-[10px] mt-1 font-medium">{couponError}</p>}
+                                {appliedCoupon && <p className="text-emerald-500 text-[10px] mt-1 font-medium">¡Cupón {appliedCoupon.code} aplicado!</p>}
                             </div>
                             <button
                                 onClick={handleCheckout}
@@ -175,7 +232,7 @@ export default function CartPage() {
                                 className="w-full py-3.5 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all flex justify-center items-center gap-2 disabled:bg-slate-400 disabled:cursor-not-allowed disabled:shadow-none"
                             >
                                 <span className="material-symbols-outlined">credit_card</span>
-                                {checkoutButtonText}
+                                Proceder al pago
                             </button>
                         </div>
                     </div>

@@ -46,6 +46,12 @@ export default function Navbar() {
                         <Link className="text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-primary text-sm font-medium transition-colors" to="/">Productos</Link>
                         <Link className="text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-primary text-sm font-medium transition-colors" to="/cart">Carrito</Link>
                         <Link className="text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-primary text-sm font-medium transition-colors" to="/orders">Mis Pedidos</Link>
+                        {user && user.is_admin && (
+                            <Link className="text-amber-600 dark:text-amber-500 hover:text-amber-700 dark:hover:text-amber-400 text-sm font-bold transition-colors flex items-center gap-1" to="/admin">
+                                <span className="material-symbols-outlined text-[18px]">admin_panel_settings</span>
+                                Panel Admin
+                            </Link>
+                        )}
                     </nav>
                 </div>
                 <div className="flex flex-1 justify-end gap-4 md:gap-8 items-center">
