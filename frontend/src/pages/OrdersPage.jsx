@@ -3,6 +3,8 @@ import { useAuth } from '../context/AuthContext'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import { Link } from 'react-router-dom'
+import InvoiceModal from '../components/InvoiceModal'
+import ProductImage from '../components/ProductImage'
 
 export default function OrdersPage() {
     const { token } = useAuth()
@@ -10,6 +12,7 @@ export default function OrdersPage() {
     const [orders, setOrders] = useState([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState("")
+    const [selectedOrder, setSelectedOrder] = useState(null)
 
 
 
@@ -131,50 +134,30 @@ export default function OrdersPage() {
                                             <p className="font-semibold text-emerald-600 dark:text-emerald-400">Completado</p>
                                         </div>
                                     </div>
-                                    <div className="text-left md:text-right w-full md:w-auto mt-2 md:mt-0 pt-4 md:pt-0 border-t md:border-none border-slate-200 dark:border-slate-700">
-                                        <p className="text-xs text-slate-500 mb-1 uppercase font-bold tracking-widest">Total del Pedido</p>
-                                        <p className="font-black text-primary text-xl">{parseFloat(order.total).toFixed(2)} €</p>
+                                    <div className="flex gap-4 items-center w-full md:w-auto mt-4 md:mt-0 pt-4 md:pt-0 border-t md:border-none border-slate-200 dark:border-slate-700">
+                                        <div className="text-left md:text-right mr-4">
+                                            <p className="text-xs text-slate-500 mb-1 uppercase font-bold tracking-widest">Total del Pedido</p>
+                                            <p className="font-black text-primary text-xl">{parseFloat(order.total).toFixed(2)} €</p>
+                                        </div>
+                                        <button 
+                                            onClick={() => setSelectedOrder(order)}
+                                            className="px-4 py-2 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-sm rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 transition-colors flex items-center gap-2"
+                                        >
+                                            <span className="material-symbols-outlined text-[18px]">receipt_long</span>
+                                            Ver Factura
+                                        </button>
                                     </div>
                                 </div>
 
                                 <div className="p-6 focus-within:ring mt-2">
                                     <ul className="flex flex-col gap-6">
                                         {order.order_items.map(function (item) {
-                                            let nombre = 'Producto desconocido'
-                                            let imagen_url = "https://images.unsplash.com/photo-1525547719571-a2d4ac8945e2?w=800&q=80"
-
-                                            if (item.product != null) {
-                                                nombre = item.product.nombre
-                                                if (item.product.imagen_url != null && item.product.imagen_url != "") {
-                                                    imagen_url = item.product.imagen_url
-                                                } else {
-                                                    const n = item.product.nombre.toLowerCase();
-                                                    if (n.includes("teclado")) {
-                                                        imagen_url = "https://images.unsplash.com/photo-1511467687858-23d96c32e4ae?w=800&q=80";
-                                                    } else if (n.includes("ratón")) {
-                                                        imagen_url = "https://images.unsplash.com/photo-1615663245857-ac93bb7c39e7?w=800&q=80";
-                                                    } else if (n.includes("alfombrilla")) {
-                                                        imagen_url = "https://images.unsplash.com/photo-1629429464245-4874997f1e73?w=800&q=80";
-                                                    } else if (n.includes("cascos") || n.includes("auriculares")) {
-                                                        imagen_url = "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&q=80";
-                                                    } else if (n.includes("monitor")) {
-                                                        imagen_url = "https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?w=800&q=80";
-                                                    } else if (n.includes("ordenador") || n.includes("sobremesa")) {
-                                                        imagen_url = "https://images.unsplash.com/photo-1587831990711-23ca6441447b?w=800&q=80";
-                                                    } else if (n.includes("lampara") || n.includes("lámpara")) {
-                                                        imagen_url = "https://images.unsplash.com/photo-1542332606-b3d2703867cd?w=800&q=80";
-                                                    } else if (n.includes("regleta")) {
-                                                        imagen_url = "https://images.unsplash.com/photo-1585351149313-be5939fc9b2c?w=800&q=80";
-                                                    } else if (n.includes("hub") || n.includes("usb")) {
-                                                        imagen_url = "https://images.unsplash.com/photo-1611532736597-de2d4265fba3?w=800&q=80";
-                                                    }
-                                                }
-                                            }
+                                            const nombre = item.product ? item.product.nombre : 'Producto desconocido'
 
                                             return (
                                                 <li key={item.id} className="flex gap-4 items-center">
                                                     <div className="w-20 h-20 rounded-xl bg-slate-100 dark:bg-slate-800 overflow-hidden relative flex-shrink-0 shadow-sm">
-                                                        <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url("${imagen_url}")` }}></div>
+                                                        <ProductImage producto={item.product || { nombre: 'Desconocido' }} className="w-full h-full object-cover" />
                                                     </div>
                                                     <div className="flex-1">
                                                         <Link to="/" className="font-bold text-slate-900 dark:text-slate-100 hover:text-primary transition-colors text-lg">
@@ -199,6 +182,11 @@ export default function OrdersPage() {
             </main>
 
             <Footer />
+            <InvoiceModal 
+                isOpen={!!selectedOrder} 
+                onClose={() => setSelectedOrder(null)} 
+                order={selectedOrder} 
+            />
         </div>
     )
 }

@@ -1,22 +1,10 @@
-export default function ProductCard({ producto, onAddToCart }) {
-    const defaultImages = {
-        "Teclado": "https://images.unsplash.com/photo-1511467687858-23d96c32e4ae?w=800&q=80",
-        "Ratón": "https://images.unsplash.com/photo-1615663245857-ac93bb7c39e7?w=800&q=80",
-        "Alfombrilla grande": "https://images.unsplash.com/photo-1616428315106-904359e9bf9b?w=800&q=80",
-        "Cascos Gaming": "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&q=80",
-        "Monitor 27 pulgadas": "https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?w=800&q=80",
-        "Ordenador de Sobremesa": "https://images.unsplash.com/photo-1587831990711-23ca6441447b?w=800&q=80",
-        "Lampara de lava": "https://images.unsplash.com/photo-1571167530330-9e635cbc1dca?w=800&q=80",
-        "Regleta": "https://images.unsplash.com/photo-1629739683359-99436fc9fca6?w=800&q=80",
-        "Hub usb C": "https://images.unsplash.com/photo-1611532736597-de2d4265fba3?w=800&q=80"
-    };
+import { useState } from 'react';
+import { Link } from 'react-router-dom';
+import FastCheckoutModal from './FastCheckoutModal';
+import ProductImage from './ProductImage';
 
-    let imageUrl = "https://images.unsplash.com/photo-1525547719571-a2d4ac8945e2?w=800&q=80"
-    if (producto.imagen_url != null && producto.imagen_url != "") {
-        imageUrl = producto.imagen_url
-    } else if (defaultImages[producto.nombre] != null) {
-        imageUrl = defaultImages[producto.nombre]
-    }
+export default function ProductCard({ producto, onAddToCart }) {
+    const [isFastCheckoutOpen, setIsFastCheckoutOpen] = useState(false);
 
     let badgeElement = <span className="absolute top-4 left-4 px-3 py-1 bg-white/90 dark:bg-slate-900/90 backdrop-blur rounded-full text-[10px] font-bold uppercase tracking-wider text-primary shadow-md">Destacado</span>
     let stockCircleClass = "size-2 rounded-full bg-emerald-500"
@@ -34,17 +22,30 @@ export default function ProductCard({ producto, onAddToCart }) {
 
     return (
         <div className="group flex flex-col bg-white dark:bg-slate-900 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all border border-slate-100 dark:border-slate-800">
-            <div className="relative aspect-[4/5] overflow-hidden">
-                <div
-                    className="w-full h-full bg-center bg-cover transition-transform duration-500 group-hover:scale-110"
-                    style={{ backgroundImage: `url("${imageUrl}")` }}
-                ></div>
+            <Link to={`/product/${producto.id}`} className="relative aspect-4/5 overflow-hidden block">
+                <ProductImage 
+                    producto={producto} 
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
+                />
                 {badgeElement}
-            </div>
+            </Link>
             <div className="p-5 flex flex-col flex-1">
                 <div className="flex justify-between items-start mb-2">
-                    <h3 className="text-slate-900 dark:text-slate-100 text-lg font-bold leading-tight">{producto.nombre}</h3>
-                    <p className="text-primary font-bold">{producto.precio} €</p>
+                    <Link to={`/product/${producto.id}`} className="hover:text-primary transition-colors">
+                        <h3 className="text-slate-900 dark:text-slate-100 text-lg font-bold leading-tight pr-2">{producto.nombre}</h3>
+                    </Link>
+                    <div className="flex flex-col items-end gap-1">
+                        <p className="text-primary font-bold whitespace-nowrap">{producto.precio} €</p>
+                        <button 
+                            hidden={isButtonDisabled}
+                            onClick={() => setIsFastCheckoutOpen(true)}
+                            className="flex items-center gap-1 text-[10px] uppercase tracking-wider font-extrabold text-amber-500 hover:text-white border border-amber-500 hover:bg-amber-500 rounded px-1.5 py-0.5 transition-all shadow-sm shadow-amber-500/10"
+                            title="Compra Rápida Sin Registro"
+                        >
+                            <span className="material-symbols-outlined text-[14px]">bolt</span>
+                            Rápida
+                        </button>
+                    </div>
                 </div>
                 <div className="flex items-center gap-1.5 mb-6">
                     <span className={stockCircleClass}></span>
@@ -61,6 +62,13 @@ export default function ProductCard({ producto, onAddToCart }) {
                     Añadir al carrito
                 </button>
             </div>
+            
+            {isFastCheckoutOpen && (
+                <FastCheckoutModal
+                    producto={producto}
+                    onClose={() => setIsFastCheckoutOpen(false)}
+                />
+            )}
         </div>
     )
 }

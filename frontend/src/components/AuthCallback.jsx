@@ -13,12 +13,14 @@ function AuthCallback() {
         const name = params.get('name')
         const email = params.get('email')
         const avatar = params.get('avatar')
+        const is_admin = params.get('is_admin') === '1'
 
         if (token) {
             login(token, {
                 name,
                 email,
                 avatar,
+                is_admin,
             })
 
             window.history.replaceState({}, document.title, '/auth/callback')
