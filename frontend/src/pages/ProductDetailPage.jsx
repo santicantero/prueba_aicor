@@ -6,6 +6,7 @@ import { useCart } from '../context/CartContext'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import ProductImage from '../components/ProductImage'
+import ProductReviews from '../components/ProductReviews'
 
 export default function ProductDetailPage() {
     const { id } = useParams()
@@ -184,6 +185,10 @@ export default function ProductDetailPage() {
                         </div>
                     </div>
                 </div>
+
+                {/* Reviews Section */}
+                <ProductReviews productId={product.id} />
+                
             </main>
 
             <Footer />
